@@ -1,0 +1,68 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a menu.
+ *
+ * Available variables:
+ * - menu_name: The machine name of the menu.
+ * - items: A nested list of menu items. Each menu item contains:
+ *   - attributes: HTML attributes for the menu item.
+ *   - below: The menu item child items.
+ *   - title: The menu link title.
+ *   - url: The menu link url, instance of \Drupal\Core\Url
+ *   - localized_options: Menu link localized options.
+ *   - is_expanded: TRUE if the link has visible children within the current
+ *     menu tree.
+ *   - is_collapsed: TRUE if the link has children within the current menu tree
+ *     that are not currently visible.
+ *   - in_active_trail: TRUE if the link is in the active trail.
+ *
+ * @ingroup themeable
+ */
+#}
+{% import _self as menus %}
+{#
+  We call a macro which calls itself to render the full tree.
+  @see http://twig.sensiolabs.org/doc/tags/macro.html
+#}
+{{ menus.menu_links(items, attributes, 0) }}
+
+{% macro menu_links(items, attributes, menu_level) %}
+    {% import _self as menus %}
+    {% if items %}
+        {% if menu_level == 0 %}
+            <ul{{ attributes }}>
+        {% endif %}
+        {% for item in items %}
+            <li {{ item.is_active ?  item.attributes.addClass('active') : item.attributes }} >
+                {% if not item.is_active and item.url.options.attributes.class.0 and item.url.options.attributes.class.0 == 'external-link-gold' %}
+                    <a
+                       {% if item.url.external == true and item.url.uri %}
+                           href="{{ item.url.uri }}"
+                       {% else %}
+                           href="{{ item.url }}"
+                       {% endif %}
+                       {% if item.url.options.attributes.target %}target="{{ item.url.options.attributes.target }}"{% endif %}
+                       {% if item.url.options.attributes.rel %}rel="{{ item.url.options.attributes.rel }}"{% endif %}
+
+                       {% if item.url.options.attributes.class.0 %}class="{{ item.url.options.attributes.class.0 }}"{% endif %}
+                       {% if item.url.options.attributes.title %}title="{{ item.url.options.attributes.title }}"{% endif %}
+                       {% if item.url.options.attributes['data-toggle'] %}data-toggle="{{ item.url.options.attributes['data-toggle'] }}"{% endif %}
+                       {% if item.url.options['fragment'] %}fragment="{{ item.url.options['fragment'] }}"{% endif %}
+                       {% if item.url.external == false and item.url.routeParameters['node'] %}data-drupal-link-system-path="node/{{ item.url.routeParameters['node'] }}"{% endif %}
+                       {% if item.url.external == false and item.url.routeParameters['file_id'] %}data-drupal-link-system-path="file/{{ item.url.routeParameters['file_id'] }}"{% endif %}
+                    >{{ item.title }}<i class="external-link-icon icon-du-link-ext-alt"></i></a>
+                {% else %}
+                    {{ link(item.title, item.url) }}
+                {% endif %}
+
+                {% if item.below %}
+                    {{ menus.menu_links(item.below, attributes, menu_level + 1) }}
+                {% endif %}
+            </li>
+        {% endfor %}
+        {% if menu_level == 0 %}
+            </ul>
+        {% endif %}
+    {% endif %}
+{% endmacro %}

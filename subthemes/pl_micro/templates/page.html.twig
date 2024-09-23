@@ -1,0 +1,68 @@
+{% if catastrophic_alert %}
+    {{ page.content_top }}
+    {{ page.content }}
+{% else %}
+    {% embed "@templates/micro-page.twig" %}
+        {% if hero_video_url %}
+            {% set hero_video = {
+                "id": "hero-video",
+                "is_hero_video": true,
+                "mp4_url": hero_video_url
+            } %}
+        {% endif %}
+        {% if hero_url %}
+          {% if (is_utility_page == FALSE) and (image_type == FALSE) %}
+              {% set hero_image = {
+                  '#type': 'responsive_image',
+                  '#responsive_image_style_id': 'hero_image',
+                  '#uri': hero_url,
+                  '#attributes': { 'alt': hero_alt },
+              } %}
+          {% elseif (image_type == '1') %}
+              {% set hero_image = {
+                  '#type': 'responsive_image',
+                  '#responsive_image_style_id': 'short_image',
+                  '#uri': hero_url,
+                  '#attributes': { 'alt': hero_alt },
+              } %}
+          {% else %}
+              {% set hero_image = {
+                  '#type': 'responsive_image',
+                  '#responsive_image_style_id': 'utility_hero',
+                  '#uri': hero_url,
+                  '#attributes': { 'alt': hero_alt },
+              } %}
+          {% endif %}
+        {% endif %}
+        {% set page_class = "off-canvas-content" %}
+        {% if is_utility_page %}
+            {% set page_class = page_class ~ " " ~ utility_page_hero_css %}
+        {% endif %}
+        {% if hide_hero %}
+            {% set page_class = page_class ~ " hide-hero" %}
+        {% endif %}
+        {% set site_logo = unit_image_logo %}
+        {% block page_head %}
+            {% embed "@organisms/micro-header.twig" %}
+                {% set image_logo = unit_image_logo %}
+                {% set logo =  "<img src=\"" ~ base_path ~ active_theme_path() ~ "/images/logo_shield_unit.png\" alt=\"Logo\">" %}
+                {% block mega_nav %}
+                    {{ page.mega_nav }}
+                {% endblock %}
+            {% endembed %}
+        {% endblock %}
+        {% block content_top %}
+            {{ page.content_top }}
+        {% endblock %}
+        {% block content %}
+            {{ page.content }}
+        {% endblock %}
+        {% block footer %}
+            {% embed "@organisms/footer.twig" %}
+                {% block footer_content %}
+                    {{ page.footer }}
+                {% endblock %}
+            {% endembed %}
+        {% endblock %}
+    {% endembed %}
+{% endif %}

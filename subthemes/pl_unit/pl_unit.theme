@@ -1,0 +1,321 @@
+<?php
+
+/**
+ * @file
+ * Theme specific functionality.
+ */
+
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\file\Entity\File;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\block\Entity\Block;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function pl_unit_preprocess_html(&$variables) {
+  $settings = \Drupal::config('du_unit_site_config.settings');
+  if (!empty($settings->get('unit_site_theme'))) {
+    $variables['unit_site_theme'] = 'unit-theme-' . $settings->get('unit_site_theme');
+  }
+
+  $settings = \Drupal::config('du_unit_site_config.settings');
+  if (!empty($settings->get('unit_site_prefix'))) {
+    $variables['site_prefix'] = $settings->get('unit_site_prefix');
+  }
+
+  $config = \Drupal::configFactory()->getEditable('du_unit_site_config.settings');
+  $term_id = $config->get('unit_site_term');
+  $term = Term::load($term_id);
+  if (!empty($term)) {
+    $term_name = $term->getName();
+    $term_abbr = $term->get('field_unit_abbreviation')->value;
+    $variables['unit_tid'] = $term_abbr;
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function pl_unit_preprocess_page(&$variables) {
+  global $base_url;
+
+  $site_config = \Drupal::config('system.site');
+  $variables['site_name'] = $site_config->get('name');
+
+  $settings = \Drupal::config('du_unit_site_config.settings');
+  if (!empty($settings->get('unit_site_prefix'))) {
+    $variables['site_prefix'] = $settings->get('unit_site_prefix');
+  }
+
+  // Determine if this node is part of an inline unit.
+  $inline_unit = FALSE;
+  if (\Drupal::moduleHandler()->moduleExists('du_inline_unit')) {
+    if (!empty($variables['node']) && $variables['node'] instanceof NodeInterface) {
+      $inline_unit = du_inline_unit_get_inline_unit($variables['node']);
+    }
+  }
+
+  // Load the logo.
+  $theme = \Drupal::theme()->getActiveTheme();
+  $variables['logo_url'] = '/';
+  $variables['unit_logo'] = $base_url . '/' . $theme->getPath() . '/images/logo_shield_unit.png';
+
+  // Default to 0 for show resources for menu.
+  $variables['hide_resources_for_menu'] = 0;
+
+  // If an inline unit has a different logo, use that.
+  $logo_fid = $logo_alt = NULL;
+  $variables['menu_item_count'] = 1;
+  if (!empty($inline_unit)) {
+    $variables['logo_url'] = $inline_unit->field_home_page->entity->path->alias;
+
+    $logo = $inline_unit->field_inline_unit_logo->first();
+    if (!empty($logo)) {
+      $logo_value = $logo->getValue();
+      $logo_fid = $logo_value['target_id'] ?? NULL;
+      $logo_alt = $logo_value['alt'] ?? '';
+    }
+
+    // Set the site prefix and name.
+    $variables['site_prefix'] = $inline_unit->field_site_prefix->value;
+    $variables['site_name'] = $inline_unit->field_site_name->value;
+
+    // Get inline unit hide_resources_for_menu value.
+    if (isset($inline_unit->field_hide_resources_for_menu)) {
+      $variables['hide_resources_for_menu'] = $inline_unit->field_hide_resources_for_menu->value;
+    }
+
+    // Get menu item count.
+    $menu = $inline_unit->field_menu->entity->id();
+    $menu_tree = \Drupal::menuTree();
+    $menu_parameters = $menu_tree->getCurrentRouteMenuTreeParameters($menu);
+    $menu_tree_elements = $menu_tree->load($menu, $menu_parameters);
+    $variables['menu_item_count'] = count($menu_tree_elements);
+  }
+  else {
+    // If not Inline site, get this Unit hide resources for menu value.
+    if ($settings->get('unit_hide_resources_for_menu') !== "NULL" and !empty($settings->get('unit_hide_resources_for_menu'))) {
+      $variables['hide_resources_for_menu'] = $settings->get('unit_hide_resources_for_menu');
+    }
+  }
+
+  if (empty($logo_fid)) {
+    $logo_fid = $settings->get('unit_site_logo');
+  }
+  if (empty($logo_alt)) {
+    $logo_alt = $settings->get('unit_site_logo_alt');
+  }
+  if (!empty($logo_fid)) {
+    $logo = File::load($logo_fid);
+    $style = \Drupal::entityTypeManager()->getStorage('image_style')->load('unit_header_logo');
+    $variables['unit_logo'] = $style->buildUrl($logo->getFileUri());
+  }
+
+  // Fix for Preview Link (on Unit) - Passing in Custom Node Fields.
+  if (empty($variables['node']) || !isset($variables['node'])) {
+    if (isset($variables['page'])) {
+      if (isset($variables['page']['#cache'])) {
+        if (isset($variables['page']['#cache']['contexts'])) {
+          $context_arr = $variables['page']['#cache']['contexts'];
+          for ($i = 0; $i < count($context_arr); $i++) {
+            if ($context_arr[$i] == "preview_link_route") {
+              $routeParameters = \Drupal::routeMatch()->getParameters();
+              if ($routeParameters->count() > 0) {
+                // We use the first parameter as dynamic indicator for the entity type to load (node,user,commerce_product, ...)
+                $entityTypeIndicator = \Drupal::routeMatch()
+                  ->getParameters()
+                  ->keys()[0];
+                $entity = \Drupal::routeMatch()
+                  ->getParameter($entityTypeIndicator);
+                if (is_object($entity) && $entity instanceof ContentEntityInterface) {
+                  if (($entity->hasField('field_hero_media_header') && !empty($entity->get('field_hero_media_header'))) || ($entity->hasField('field_program_hero_image') && !empty($entity->get('field_program_hero_image')))) {
+                    if ($entity->hasField('field_hero_media_header')) {
+                      $hero_paragraph = $entity->get('field_hero_media_header')->entity;
+                    }
+                    else {
+                      $hero_paragraph = NULL;
+                    }
+                    if ($entity->hasField('field_program_hero_image')) {
+                      $hero_program_field = $entity->get('field_program_hero_image')->entity;
+                    }
+                    else {
+                      $hero_program_field = NULL;
+                    }
+                    if ($hero_paragraph) {
+                      if (!empty($hero_paragraph->get('field_hero_image')->entity)) {
+                        $image = $hero_paragraph->get('field_hero_image')->entity;
+                        $variables['hero_url'] = $image->get('uri')
+                          ->getString();
+                        $image_value = $hero_paragraph->get('field_hero_image')
+                          ->first()
+                          ->getValue();
+                        $variables['hero_alt'] = $image_value['alt'];
+                      }
+                      else {
+                        $variables['hero_alt'] = 'hero image';
+                      }
+                      if (!empty($hero_paragraph->get('field_hero_video')->entity)) {
+                        $video = $hero_paragraph->get('field_hero_video')->entity;
+                        $variables['hero_video_url'] = file_create_url($video->get('uri')
+                          ->getString());
+                      }
+                      if ($hero_paragraph->hasField('field_unit_hero_link')) {
+                        if (!empty($hero_paragraph->get('field_unit_hero_link')->first())) {
+                          $variables['hero_link']['href'] = $hero_paragraph->get('field_unit_hero_link')
+                            ->first()
+                            ->getUrl();
+                        }
+                      }
+                    }
+                    elseif (!empty($hero_program_field)) {
+                      $variables['hero_url'] = $hero_program_field->get('uri')->getString();
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (isset($variables['node']) && is_object($variables['node'])) {
+    $node_type = $variables['node']->bundle();
+
+    // Setup hero paragraph values from node that will be used in page template
+    // header area.
+    if (isset($variables['node']->field_unit_hero_media_header) || isset($variables['node']->field_program_hero_image)) {
+      $hero_paragraph = $variables['node']->field_unit_hero_media_header->entity ?? NULL;
+      $hero_program_field = $variables['node']->field_program_hero_image->entity ?? NULL;
+      if ($hero_paragraph) {
+
+        if (!empty($hero_paragraph->get('field_hero_image')->entity)) {
+          $image = $hero_paragraph->get('field_hero_image')->entity;
+          $variables['hero_url'] = $image->get('uri')->getString();
+          $image_value = $hero_paragraph->get('field_hero_image')->first()->getValue();
+          $variables['hero_alt'] = $image_value['alt'];
+        }
+
+        if (!empty($hero_paragraph->get('field_unit_image_type'))) {
+          $image_type = $hero_paragraph->get('field_unit_image_type')->value;
+          $variables['image_type'] = $image_type;
+        }
+
+        else {
+          $variables['hero_alt'] = 'hero image';
+        }
+
+        if (!empty($hero_paragraph->get('field_hero_video')->entity)) {
+          $video = $hero_paragraph->get('field_hero_video')->entity;
+          $variables['hero_video_url'] = file_create_url($video->get('uri')
+            ->getString());
+        }
+
+        if (!empty($hero_paragraph->get('field_unit_hero_link')->first())) {
+          $variables['hero_link'][0]['href'] = $hero_paragraph->get('field_unit_hero_link')->first()->getUrl();
+        }
+
+        if ($node_type == 'home_page') {
+          $variables['is_home'] = TRUE;
+          $variables['headline']['type'] = 'h1';
+          $variables['headline']['title'] = $hero_paragraph->get('field_unit_hero_headline')->value;
+          $variables['hero_class'] = $hero_paragraph->get('field_unit_hero_display')->value;
+          $variables['hero_caption'] = $hero_paragraph->get('field_unit_hero_caption')->value;
+          $variables['hero_link'][0]['title'] = $hero_paragraph->get('field_unit_hero_link')->title;
+          $variables['unit_hero_embed'] = $hero_paragraph->get('field_unit_hero_embed')->value;
+          $hero_link_array = $hero_paragraph->get('field_unit_hero_link');
+
+          // Check for and retrieve the URL (from the URI) for hero links.
+          if ($hero_paragraph->hasField('field_unit_hero_link') and count($hero_link_array) > 1) {
+            $hero_link_array = $hero_paragraph->get('field_unit_hero_link');
+            if (!empty($hero_link_array[0])) {
+              $variables['hero_link'][0]['title'] = $hero_link_array[0]->title;
+              $variables['hero_link'][0]['href'] = Url::fromUri($hero_link_array[0]->uri);
+            }
+            if (!empty($hero_link_array[1])) {
+              $variables['hero_link'][1]['title'] = $hero_link_array[1]->title;
+              $variables['hero_link'][1]['href'] = Url::fromUri($hero_link_array[1]->uri);
+            }
+          }
+        }
+
+        if (isset($node_type) && ($node_type == 'academic_program' || $node_type == 'local_program')) {
+          $variables['hero_title'] = TRUE;
+          $variables['headline']['title'] = $variables['node']->title->value;
+          $variables['headline']['type'] = 'h2';
+          $variables['hero_background'] = TRUE;
+        }
+
+      }
+      elseif (!empty($hero_program_field)) {
+        $variables['hero_url'] = $hero_program_field->get('uri')->getString();
+      }
+    }
+    if (isset($node_type) && $node_type == 'article') {
+      $variables['hide_hero'] = TRUE;
+    }
+
+    if (isset($node_type) && $node_type == 'utility_page') {
+      // Utility Page uses the hero paragraph and field hero media header so add this boolean to trigger adding utility-page class for hero header.
+      $variables['is_utility_page'] = TRUE;
+      $variables['utility_page_hero_css'] = 'utility-page';
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_block().
+ */
+function pl_unit_preprocess_block(&$variables) {
+  $variables['content']['#attributes']['block'] = $variables['attributes']['id'];
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ */
+function pl_unit_theme_suggestions_block_alter(array &$suggestions, array $variables) {
+  $block = Block::load($variables['elements']['#id']);
+  $region = $block->getRegion();
+  if ($region == 'utility_nav') {
+    $suggestions = [];
+    $suggestions[] = 'block__system_menu_block__utility_menu';
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ */
+function pl_unit_theme_suggestions_menu_alter(array &$suggestions, array &$variables) {
+  if (isset($variables['attributes']['block'])) {
+    $suggestions[0] = 'menu__utility_menu';
+    $suggestions[] = 'menu__utilitymenu';
+  }
+}
+
+/**
+ * Implements hook_preprocess_paragraph().
+ */
+function pl_unit_preprocess_paragraph(&$variables) {
+  if ($variables['elements']['#paragraph']->bundle() == 'homepage_section_copy') {
+    $variables['headline_type'] = 'h2';
+    $node = $variables['elements']['#paragraph']->getParentEntity();
+    $paragraph = $variables['elements']['#paragraph'];
+    if (!empty($node) && !empty($node->field_unit_hero_media_header)) {
+      $hero_media_header = $node->field_unit_hero_media_header->entity;
+      if (!empty($hero_media_header)) {
+        foreach ($node->field_page_content as $page_content) {
+          if ($page_content->entity->bundle() == 'homepage_section_copy') {
+            if ($page_content->entity->id() == $paragraph->id()) {
+              $variables['headline_type'] = !empty($hero_media_header->field_unit_hero_headline->value) ? 'h2' : 'h1';
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+}

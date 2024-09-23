@@ -1,0 +1,53 @@
+core:
+  version: '1.1.0'
+  css:
+    theme:
+      js/motion-ui/dist/motion-ui.min.css:
+        preprocess: true
+      dest/style.css:
+        preprocess: false
+
+  js:
+    js/foundation-sites/dist/js/foundation.min.js:
+      preprocess: false
+    js/app.js:
+      preprocess: true
+    js/slick-carousel/slick/slick.min.js:
+      preprocess: true
+    js/motion-ui/dist/motion-ui.min.js:
+      preprocess: false
+    js/menu_dropdown_adjust.js:
+      preprocess: true
+    js/experiential_slideshow.js:
+      preprocess: true
+    https://cdn.jsdelivr.net/clipboard.js/1.5.10/clipboard.min.js:
+      preprocess: true
+    https://admission.du.edu/ping:
+      type: external
+      preprocess: false
+      attributes:
+        async: true
+    https://gradadmissions.du.edu/ping:
+      type: external
+      preprocess: false
+      attributes:
+        async: true
+
+  # see all in Drupal's `core/core.libraries.yml`
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/jquery.cookie
+    - core/jquery.once
+
+profile:
+  version: 1.x
+  js:
+    js/fullprofile.js:
+      preprocess: true
+
+research-project:
+  version: 1.x
+  js:
+    js/fullresearchproject.js:
+      preprocess: true

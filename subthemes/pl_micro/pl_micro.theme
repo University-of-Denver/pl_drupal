@@ -1,0 +1,213 @@
+<?php
+
+/**
+ * @file
+ * Theme specific functionality.
+ */
+
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\file\Entity\File;
+use Drupal\taxonomy\Entity\Term;
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function pl_micro_preprocess_html(&$variables) {
+  $settings = \Drupal::config('du_unit_site_config.settings');
+  if (!empty($settings->get('unit_site_theme'))) {
+    $variables['unit_site_theme'] = 'unit-theme-' . $settings->get('unit_site_theme');
+  }
+
+  $settings = \Drupal::config('du_unit_site_config.settings');
+  if (!empty($settings->get('unit_site_prefix'))) {
+    $variables['site_prefix'] = $settings->get('unit_site_prefix');
+  }
+
+  $config = \Drupal::configFactory()->getEditable('du_unit_site_config.settings');
+  $term_id = $config->get('unit_site_term');
+  $term = Term::load($term_id);
+  if (!empty($term)) {
+    $term_name = $term->getName();
+    $term_abbr = $term->get('field_unit_abbreviation')->value;
+    $variables['unit_tid'] = $term_abbr;
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function pl_micro_preprocess_page(&$variables) {
+
+  $site_config = \Drupal::config('system.site');
+  $variables['site_name'] = $site_config->get('name');
+
+  $settings = \Drupal::config('du_unit_site_config.settings');
+  if (!empty($settings->get('unit_site_prefix'))) {
+    $variables['site_prefix'] = $settings->get('unit_site_prefix');
+  }
+
+  $logo_fid = $settings->get('unit_site_logo');
+  $logo_alt = $settings->get('unit_site_logo_alt');
+  if (!empty($logo_fid)) {
+    $logo = File::load($logo_fid);
+    if (!empty($logo)) {
+      $variables['unit_image_logo'] = [
+        '#theme' => 'image_style',
+        '#style_name' => 'unit_header_logo',
+        '#uri' => $logo->getFileUri(),
+        '#alt' => $logo_alt,
+      ];
+    }
+  }
+  if (isset($variables['node'])) {
+    $node_type = $variables['node']->bundle();
+  }
+
+  // Setup hero paragraph values from node that will be used in page template header area.
+  if (isset($variables['node']->field_hero_media_header)) {
+    $hero_paragraph = $variables['node']->field_hero_media_header->entity;
+    if ($hero_paragraph) {
+      if ($hero_paragraph->getType() == 'experiential_story') {
+        $view_builder = \Drupal::entityTypeManager()->getViewBuilder('paragraph');
+        $build = $view_builder->view($hero_paragraph, 'full');
+        $variables['experiential_story'] = render($build);
+      }
+      else {
+        if (!empty($hero_paragraph->get('field_hero_image')->entity)) {
+          $image = $hero_paragraph->get('field_hero_image')->entity;
+          $variables['hero_url'] = $image->get('uri')->getString();
+          $image_value = $hero_paragraph->get('field_hero_image')->first()->getValue();
+          $variables['hero_alt'] = $image_value['alt'];
+        }
+        else {
+          $variables['hero_alt'] = 'hero image';
+        }
+
+        if (!empty($hero_paragraph->get('field_hero_video')->entity)) {
+          $video = $hero_paragraph->get('field_hero_video')->entity;
+          $variables['hero_video_url'] = file_create_url($video->get('uri')
+            ->getString());
+        }
+
+        if ($node_type == 'home_page') {
+          $variables['is_home'] = TRUE;
+          $variables['headline']['type'] = 'h2';
+          $variables['headline']['title'] = $hero_paragraph->get('field_hero_caption')->value;
+        }
+        else {
+          $variables['hero_caption'] = $hero_paragraph->get('field_hero_caption')->value;
+        }
+      }
+    }
+  }
+
+  // Fix for Hero Media (Microsites) - Preview Link.
+  if (empty($variables['node']) || !isset($variables['node'])) {
+    if (isset($variables['page'])) {
+      if (isset($variables['page']['#cache'])) {
+        if (isset($variables['page']['#cache']['contexts'])) {
+          $context_arr = $variables['page']['#cache']['contexts'];
+          for ($i = 0; $i < count($context_arr); $i++) {
+            if ($context_arr[$i] == "preview_link_route") {
+              $routeParameters = \Drupal::routeMatch()->getParameters();
+              if ($routeParameters->count() > 0) {
+                // We use the first parameter as dynamic indicator for the entity type to load (node,user,commerce_product, ...)
+                $entityTypeIndicator = \Drupal::routeMatch()
+                  ->getParameters()
+                  ->keys()[0];
+                $entity = \Drupal::routeMatch()
+                  ->getParameter($entityTypeIndicator);
+                if (is_object($entity) && $entity instanceof ContentEntityInterface) {
+                  if (($entity->hasField('field_hero_media_header') && !empty($entity->get('field_hero_media_header'))) || ($entity->hasField('field_program_hero_image') && !empty($entity->get('field_program_hero_image')))) {
+                    if ($entity->hasField('field_hero_media_header')) {
+                      $hero_paragraph = $entity->get('field_hero_media_header')->entity;
+                    }
+                    else {
+                      $hero_paragraph = NULL;
+                    }
+                    if ($entity->hasField('field_program_hero_image')) {
+                      $hero_program_field = $entity->get('field_program_hero_image')->entity;
+                    }
+                    else {
+                      $hero_program_field = NULL;
+                    }
+                    if ($hero_paragraph) {
+                      if (!empty($hero_paragraph->get('field_hero_image')->entity)) {
+                        $image = $hero_paragraph->get('field_hero_image')->entity;
+                        $variables['hero_url'] = $image->get('uri')
+                          ->getString();
+                        $image_value = $hero_paragraph->get('field_hero_image')
+                          ->first()
+                          ->getValue();
+                        $variables['hero_alt'] = $image_value['alt'];
+                      }
+                      else {
+                        $variables['hero_alt'] = 'hero image';
+                      }
+                      if (!empty($hero_paragraph->get('field_hero_video')->entity)) {
+                        $video = $hero_paragraph->get('field_hero_video')->entity;
+                        $variables['hero_video_url'] = file_create_url($video->get('uri')
+                          ->getString());
+                      }
+                      if ($hero_paragraph->hasField('field_unit_hero_link')) {
+                        if (!empty($hero_paragraph->get('field_unit_hero_link')->entity)) {
+                          $variables['hero_link']['href'] = $hero_paragraph->get('field_unit_hero_link')
+                            ->first()
+                            ->getUrl();
+                        }
+
+                      }
+                    }
+                    elseif (!empty($hero_program_field)) {
+                      $variables['hero_url'] = $hero_program_field->get('uri')->getString();
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Remove default social media bar if override block is present.
+  if (isset($variables['page']['footer']['socialmediabar'])) {
+    unset($variables['page']['footer']['defaultsocialmedia']);
+  }
+
+  // Remove default footer CTAs if override block is present.
+  if (isset($variables['page']['footer']['footerctas'])) {
+    unset($variables['page']['footer']['defaultfooterctas']);
+  }
+
+  if (isset($variables['node'])) {
+    $node_type = $variables['node']->bundle();
+  }
+
+  if (isset($variables['node']->field_hide_footer_cta_region) && $variables['node']->get('field_hide_footer_cta_region')->value) {
+    // Remove Footer CTA Bar if this functionality and field is set and is true for removing it from display.
+    unset($variables['page']['footer']['defaultfooterctas']);
+    unset($variables['page']['footer']['footerctas']);
+  }
+
+  if (isset($node_type) && $node_type == 'utility_page') {
+    // Utility Page uses the hero paragraph and field hero media header so add this boolean to trigger adding utility-page class for hero header.
+    $variables['is_utility_page'] = TRUE;
+    $variables['utility_page_hero_css'] = 'utility-page';
+  }
+}
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function pl_micro_preprocess_node(&$variables) {
+  $variables['current_theme'] = 'micro';
+}
+
+/**
+ * Implements hook_preprocess_video_embed_iframe__youtube().
+ */
+function pl_micro_preprocess_video_embed_iframe__youtube(&$variables) {
+  $variables['query']['rel'] = '0';
+}

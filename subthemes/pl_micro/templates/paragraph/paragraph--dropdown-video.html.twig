@@ -1,0 +1,10 @@
+{% embed "@organisms/dropdown-video.twig" %}
+    {%
+      set image = {
+        "src": file_url(content.field_dropdown_video_image|field_target_entity.uri.value),
+        "alt_text":content.field_dropdown_video_image|field_raw('alt')
+      }
+    %}
+    {% set videoUrl = content.field_dropdown_video_video|field_value %}
+    {% set trigger = content.field_dropdown_video_trigger_tex|field_value %}
+{% endembed %}
