@@ -4,7 +4,7 @@
   "keywords":         ["pattern lab", "drupal"],
   "homepage":         "http://patternlab.io",
   "license":          "GPL-2.0+",
-  "type":             "project",
+  "type":             "drupal-theme",
   "authors": [
       {
           "name":         "Dave Olsen",
