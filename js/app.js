@@ -808,36 +808,6 @@
               }
           }
       });
-        // ALERTS
-        // --informational--
-        $('#du-alert.du-alert--notification').toggleClass('du-alert--notification--show', !$.cookie('alert-notification-closed'));
-        $('#du-alert.du-alert--notification .du-alert__action-button').on('click', function() {
-            $('#du-alert.du-alert--notification').removeClass('du-alert--notification--show');
-            $.cookie('alert-notification-closed', true);
-            $('.du-alert--active').removeClass('du-alert--active');
-        });
-        // --urgent--
-        $('#du-alert.du-alert--urgent').toggleClass('du-alert--notification--show', !$.cookie('alert-notification-closed'));
-        $('#urgent-alert-toggle').click(function() {
-            $(this).children().toggleClass('icon-du-up-arrow');
-            $(this).children().toggleClass('icon-du-down-arrow');
-        });
-
-        //Listen for when the alert closes to add class to -->header element -due to nesting targeting was not possible with css
-        var alertClose = document.querySelector('#du-alert');
-        if (alertClose) {
-          var observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-              if (mutation.type == "attributes") {
-                var element = document.getElementsByTagName('header')[0];
-                element.classList.add('alert-closed');
-              }
-            });
-          });
-          observer.observe(alertClose, {
-            attributes: true //configure it to listen to attribute changes
-          });
-        }
 
       //Information Overview
       $('.information-overview-module .list-of-facts').each(function() {
