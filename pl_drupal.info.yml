@@ -29,3 +29,4 @@ components:
 dependencies:
   - drupal:components
   - drupal:twig_field_value
+  - drupal:twig_tweak
