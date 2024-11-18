@@ -35,7 +35,10 @@
   Drupal.behaviors.card_list_module = {
       attach: function (context, settings) {
           if (!$('.cards-list-module').hasClass('js-card-list-processed')) {
-              $('.cards-list-module').once('card_list_module').addClass('js-card-list-processed');
+
+
+              //$('.cards-list-module').once('card_list_module').addClass('js-card-list-processed');
+              $(once('.cards-list-module', 'card_list_module', context)).addClass('js-card-list-processed');
 
               if (typeof $grid !== 'undefined') {
                 $('.btn--academic-filter.active[data-filter]').triggerHandler('click', {sort:true,sortBy:['name']});
@@ -1643,7 +1646,10 @@ function reCalcSticky() {
 
     Drupal.behaviors.buttonHandleClick = {
         attach: function(context, settings) {
-            $('button.handle-click').once('handle-button-click').on('click', function(e){
+            //$('button.handle-click').once('handle-button-click').on('click', function(e){
+            $(once('handle-button-click', 'button.handle-click', context)).on('click', function(e){
+ 
+
                 e.preventDefault();
                 var href = $(this).attr('data-href');
                 if (typeof href !== "undefined") {
@@ -1705,7 +1711,9 @@ function reCalcSticky() {
     });
     Drupal.behaviors.resourcesResetClick = {
         attach: function(context, settings) {
-            $('#views-reset-button').once('resource-reset-click').on('click', function(e){
+            //$('#views-reset-button').once('resource-reset-click').on('click', function(e){
+            $(once('resource-reset-click', '#views-reset-button', context)).on('click', function(e){
+
                 e.preventDefault();
                 window.location.href = window.location.href;
             });
@@ -1713,7 +1721,9 @@ function reCalcSticky() {
     };
     Drupal.behaviors.searchBlockInit = {
         attach: function(context, settings) {
-            $('input#site-search-input').once('init-search').on('keypress', function(e){
+            //$('input#site-search-input').once('init-search').on('keypress', function(e){
+            $(once('init-search', 'input#site-search-input', context)).on('keypress', function(e){
+
                 if (e.keyCode == 13 || e.which == 13) {
                     e.preventDefault();
                     var value = $(this).val();
@@ -1725,7 +1735,9 @@ function reCalcSticky() {
     };
     Drupal.behaviors.initSiteSearchNoResult = {
         attach: function(context, settings) {
-            $('input#no-result-site-search-input').once('init-site-search-no-result').on('keypress', function(e){
+            //$('input#no-result-site-search-input').once('init-site-search-no-result').on('keypress', function(e){
+            $(once('init-site-search-no-result', 'input#no-result-site-search-input', context)).on('keypress', function(e){    
+
                 if (e.keyCode == 13 || e.which == 13) {
                     e.preventDefault();
                     var value = $(this).val();
@@ -1742,7 +1754,9 @@ function reCalcSticky() {
 
     Drupal.behaviors.resourceListAutoSubmitInit = {
         attach: function(context, settings) {
-            $(document).once('first-time-resource').ready(function(){
+            //$(document).once('first-time-resource').ready(function(){
+            $(once('first-time-resource', document)).ready(function(){
+
                 if (!firstTimeLoad) {
                     $('#views-exposed-form-resources-block-1 #edit-submit-resources').trigger('click');
                 }
