@@ -36,9 +36,10 @@ core:
   # see all in Drupal's `core/core.libraries.yml`
   dependencies:
     - core/jquery
+    - core/once
     - core/drupal
     - core/jquery.cookie
-    - core/jquery.once
+  
 
 profile:
   version: 1.x
