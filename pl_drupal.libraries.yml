@@ -12,8 +12,6 @@ core:
       preprocess: false
     js/app.js:
       preprocess: true
-    js/slick-carousel/slick/slick.min.js:
-      preprocess: true
     js/motion-ui/dist/motion-ui.min.js:
       preprocess: false
     js/menu_dropdown_adjust.js:
