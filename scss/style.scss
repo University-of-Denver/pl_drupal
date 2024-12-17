@@ -2,18 +2,21 @@
 // Config
 //
 
-@import "variables";
+@use "variables";
 
-@import "foundation-sites/scss/foundation";
-@import "foundation-sites/scss/util/util";
+// The files for these imports don't seem to exist anymore 
+// @import "foundation-sites/scss/foundation"; 
+// @import "foundation-sites/scss/util/util";
 
-@import "settings";
+@use "settings";
 
 @include foundation-everything;
 @include foundation-flex-classes;
 @include foundation-flex-grid;
 
+// Commenting this section out for now to run a sass migration
 //pull in du-specific scss that is not in the patterns dir
+
 @import "global";
 @import "../du-resources/base/*.scss";
 @import "../du-resources/overrides/*.scss";
@@ -21,7 +24,8 @@
 @import "../du-resources/micro/*.scss";
 
 // Run through the entire patterns collection, finding all scss files included therein
-// @import "../source/**/*.scss";
+
+@import "../source/**/*.scss";
 
 @import "../../../libraries/slick-carousel/slick/slick.scss";
 

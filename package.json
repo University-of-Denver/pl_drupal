@@ -7,18 +7,19 @@
     "@pattern-lab/core": "^3.0.0-beta.2",
     "domready": "^1.0.8",
     "foundation-sites": "^6.7.5",
+    "gulp-dart-sass": "^1.1.0",
     "gulp-sourcemaps": "^2.6.5",
     "jquery-once": "^2.2.1",
     "js-yaml": "^3.13.0",
     "motion-ui": "^2.0.3",
     "node-notifier": "^5.4.0",
+    "sass": "^1.82.0",
     "scroll-depth": "^1.0.0",
     "slick-carousel": "^1.8.1"
   },
   "devDependencies": {
     "browser-sync": "^2.26.3",
     "gulp": "^4.0.2",
-    "gulp-sass": "^4.0.2",
     "gulp-sass-glob": "^1.0.9"
   },
   "scripts": {
